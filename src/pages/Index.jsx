@@ -17,6 +17,7 @@ const Index = () => {
       <p className="text-gray-400 text-xs mt-8 text-center">
         Images are processed in your browser and not uploaded to any server
       </p>
+      <Toaster />
     </div>
   );
 };

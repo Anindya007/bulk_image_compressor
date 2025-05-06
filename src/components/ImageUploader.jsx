@@ -4,10 +4,12 @@ import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import imageCompression from "browser-image-compression";
 
 export const ImageUploader = () => {
   const [images, setImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
@@ -56,7 +58,39 @@ export const ImageUploader = () => {
     }
   };
 
-  const handleFiles = (fileList) => {
+  const compressImage = async (file) => {
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: file.type
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Compressed ${file.name} from ${file.size / 1024 / 1024} MB to ${compressedFile.size / 1024 / 1024} MB`);
+      
+      return {
+        id: Math.random().toString(36).substring(2, 11),
+        file: compressedFile,
+        originalFile: file,
+        preview: URL.createObjectURL(compressedFile),
+        compressionRatio: (file.size / compressedFile.size).toFixed(1)
+      };
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      // Return original file if compression fails
+      return {
+        id: Math.random().toString(36).substring(2, 11),
+        file: file,
+        originalFile: file,
+        preview: URL.createObjectURL(file),
+        compressionRatio: 1
+      };
+    }
+  };
+
+  const handleFiles = async (fileList) => {
     const validFiles = [];
     
     // Filter for image files only
@@ -74,24 +108,38 @@ export const ImageUploader = () => {
       });
       return;
     }
-    
-    // Create new image objects with preview URLs
-    const newImages = validFiles.map(file => ({
-      id: Math.random().toString(36).substring(2, 11),
-      file: file,
-      preview: URL.createObjectURL(file)
-    }));
-    
-    setImages(prev => [...prev, ...newImages]);
-    
+
+    setIsCompressing(true);
     toast({
-      title: "Files uploaded",
-      description: `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} added successfully!`,
+      title: "Compressing images",
+      description: `Processing ${validFiles.length} image${validFiles.length !== 1 ? 's' : ''}...`,
     });
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+
+    try {
+      // Compress all images in parallel
+      const compressPromises = validFiles.map(file => compressImage(file));
+      const compressedImages = await Promise.all(compressPromises);
+      
+      setImages(prev => [...prev, ...compressedImages]);
+      
+      toast({
+        title: "Images processed",
+        description: `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} compressed and added!`,
+      });
+    } catch (error) {
+      console.error("Error processing images:", error);
+      toast({
+        title: "Error processing images",
+        description: "There was an error compressing one or more images.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCompressing(false);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -121,7 +169,8 @@ export const ImageUploader = () => {
           isDragging 
             ? "border-primary bg-primary/5" 
             : "border-gray-300 hover:border-primary/50 bg-white",
-          images.length > 0 ? "h-[180px]" : "h-[220px]"
+          images.length > 0 ? "h-[180px]" : "h-[220px]",
+          isCompressing ? "opacity-75 pointer-events-none" : ""
         )}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
@@ -151,6 +200,9 @@ export const ImageUploader = () => {
             <p className="text-sm text-gray-500 mt-1">or click to browse</p>
           </div>
           <p className="text-xs text-gray-400">Supports: JPG, PNG, GIF, WebP, etc.</p>
+          {isCompressing && (
+            <p className="text-sm text-primary animate-pulse mt-2">Compressing images...</p>
+          )}
         </div>
       </div>
 
@@ -188,6 +240,11 @@ export const ImageUploader = () => {
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 truncate">
                   {image.file.name}
                 </div>
+                {image.compressionRatio > 1 && (
+                  <div className="absolute top-2 right-2 bg-primary text-white text-xs px-1.5 py-0.5 rounded-sm">
+                    {image.compressionRatio}x
+                  </div>
+                )}
               </div>
             ))}
           </div>
