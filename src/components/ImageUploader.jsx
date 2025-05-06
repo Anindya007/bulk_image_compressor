@@ -90,7 +90,8 @@ export const ImageUploader = () => {
     }
   };
 
-  const handleFiles = async (fileList) => {
+  // Modified to not compress images immediately
+  const handleFiles = (fileList) => {
     const validFiles = [];
     
     // Filter for image files only
@@ -109,37 +110,84 @@ export const ImageUploader = () => {
       return;
     }
 
+    // Add images without compression initially
+    const newImages = validFiles.map(file => ({
+      id: Math.random().toString(36).substring(2, 11),
+      file: file,
+      originalFile: file,
+      preview: URL.createObjectURL(file),
+      compressionRatio: 1,
+      compressed: false
+    }));
+    
+    setImages(prev => [...prev, ...newImages]);
+    
+    toast({
+      title: "Images added",
+      description: `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} added. Click "Compress Images" to optimize them.`
+    });
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // New function to handle the compression of all images
+  const handleCompressImages = async () => {
+    // Filter out already compressed images
+    const uncompressedImages = images.filter(image => !image.compressed);
+    
+    if (uncompressedImages.length === 0) {
+      toast({
+        title: "No images to compress",
+        description: "All images have already been compressed."
+      });
+      return;
+    }
+    
     setIsCompressing(true);
     toast({
       title: "Compressing images",
-      description: `Processing ${validFiles.length} image${validFiles.length !== 1 ? 's' : ''}...`,
+      description: `Processing ${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's' : ''}...`,
     });
 
     try {
       // Compress all images in parallel
-      const compressPromises = validFiles.map(file => compressImage(file));
-      const compressedImages = await Promise.all(compressPromises);
+      const compressionResults = await Promise.all(
+        uncompressedImages.map(async (image) => {
+          const compressed = await compressImage(image.originalFile);
+          return {
+            ...compressed,
+            compressed: true
+          };
+        })
+      );
       
-      setImages(prev => [...prev, ...compressedImages]);
+      // Replace uncompressed images with compressed versions
+      setImages(prevImages => 
+        prevImages.map(image => {
+          // If this image was just compressed, replace it with the compressed version
+          const compressedVersion = compressionResults.find(
+            compImg => compImg.originalFile === image.originalFile && !image.compressed
+          );
+          return compressedVersion || image;
+        })
+      );
       
       toast({
-        title: "Images processed",
-        description: `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} compressed and added!`,
+        title: "Compression complete",
+        description: `${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's were' : ' was'} compressed successfully!`,
       });
     } catch (error) {
-      console.error("Error processing images:", error);
+      console.error("Error compressing images:", error);
       toast({
-        title: "Error processing images",
+        title: "Compression error",
         description: "There was an error compressing one or more images.",
         variant: "destructive"
       });
     } finally {
       setIsCompressing(false);
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -240,7 +288,7 @@ export const ImageUploader = () => {
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 truncate">
                   {image.file.name}
                 </div>
-                {image.compressionRatio > 1 && (
+                {image.compressed && image.compressionRatio > 1 && (
                   <div className="absolute top-2 right-2 bg-primary text-white text-xs px-1.5 py-0.5 rounded-sm">
                     {image.compressionRatio}x
                   </div>
@@ -270,15 +318,13 @@ export const ImageUploader = () => {
           </Button>
           <Button
             size="sm"
-            onClick={() => {
-              // Placeholder for processing/saving images
-              toast({
-                title: "Processing images",
-                description: `${images.length} image${images.length !== 1 ? 's' : ''} ready to be processed.`
-              });
-            }}
+            onClick={handleCompressImages}
+            disabled={isCompressing}
           >
-            Process {images.length} Image{images.length !== 1 ? 's' : ''}
+            {isCompressing ? 
+              "Compressing..." : 
+              `Compress ${images.filter(img => !img.compressed).length || images.length} Image${images.filter(img => !img.compressed).length !== 1 || images.length !== 1 ? 's' : ''}`
+            }
           </Button>
         </div>
       )}
