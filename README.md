@@ -2,6 +2,10 @@
 
 This is a bulk image compressor application that compresses high-res images in bulk using web workers. The images does not leave the user's browser and are not stored in any servers.
 
+***URL***
+
+Hosted on Cloudflare pages https://bulk-image-compressor.pages.dev/
+
 
 Follow these steps:
 
