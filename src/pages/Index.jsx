@@ -1,6 +1,5 @@
 
 import { ImageUploader } from "../components/ImageUploader";
-import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   return (
