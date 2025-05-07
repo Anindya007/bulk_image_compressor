@@ -1,28 +1,11 @@
-# Welcome to your Lovable project
+**Bulk image compressor**
 
-## Project info
+This is a bulk image compressor application that compresses high-res images in bulk using web workers. The images does not leave the user's browser and are not stored in any servers.
 
-**URL**: https://lovable.dev/projects/16b6a1f4-80ae-4f5d-91c9-8895e082cc07
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/16b6a1f4-80ae-4f5d-91c9-8895e082cc07) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
 Follow these steps:
 
-```sh
+```cmd
 # Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
 
@@ -57,17 +40,10 @@ This project is built with:
 - Vite
 - TypeScript
 - React
-- shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+Thanks for the below mentioned library which performs the actual compression process 
 
-Simply open [Lovable](https://lovable.dev/projects/16b6a1f4-80ae-4f5d-91c9-8895e082cc07) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```cmd
+browser-image-compression: 2.0.2
+```
