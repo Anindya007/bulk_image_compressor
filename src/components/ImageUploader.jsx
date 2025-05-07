@@ -1,10 +1,11 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 export const ImageUploader = () => {
   const [images, setImages] = useState([]);
@@ -55,6 +56,76 @@ export const ImageUploader = () => {
   const handleFileInputChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+    }
+  };
+
+  const handleCompressAndDownloadImages = async () => {
+    const uncompressedImages = images.filter(image => !image.compressed);
+
+    if (uncompressedImages.length === 0) {
+      toast({
+        title: "No images to compress",
+        description: "All images have already been compressed.",
+      });
+      return;
+    }
+
+    setIsCompressing(true);
+    toast({
+      title: "Compressing images",
+      description: `Processing ${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's' : ''}...`,
+    });
+
+    try {
+      const zip = new JSZip();
+
+      // Compress all images and add them to the ZIP file
+      const compressionResults = await Promise.all(
+        uncompressedImages.map(async (image) => {
+          const compressed = await compressImage(image.originalFile);
+          const response = await fetch(compressed.preview);
+          const blob = await response.blob();
+          zip.file(compressed.file.name, blob);
+
+          return {
+            ...compressed,
+            compressed: true,
+          };
+        })
+      );
+
+      // Replace uncompressed images with compressed versions
+      setImages((prevImages) =>
+        prevImages.map((image) => {
+          const compressedVersion = compressionResults.find(
+            (compImg) => compImg.originalFile === image.originalFile && !image.compressed
+          );
+          return compressedVersion || image;
+        })
+      );
+
+      // Generate the ZIP file and trigger the download
+      zip.generateAsync({ type: "blob" }).then((content) => {
+        saveAs(content, "compressed_images.zip");
+        toast({
+          title: "Download ready",
+          description: "Your compressed images have been downloaded.",
+        });
+      });
+
+      toast({
+        title: "Compression complete",
+        description: `${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's were' : ' was'} compressed and downloaded successfully!`,
+      });
+    } catch (error) {
+      console.error("Error compressing images:", error);
+      toast({
+        title: "Compression error",
+        description: "There was an error compressing one or more images.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -130,64 +201,6 @@ export const ImageUploader = () => {
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-  };
-
-  // New function to handle the compression of all images
-  const handleCompressImages = async () => {
-    // Filter out already compressed images
-    const uncompressedImages = images.filter(image => !image.compressed);
-    
-    if (uncompressedImages.length === 0) {
-      toast({
-        title: "No images to compress",
-        description: "All images have already been compressed."
-      });
-      return;
-    }
-    
-    setIsCompressing(true);
-    toast({
-      title: "Compressing images",
-      description: `Processing ${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's' : ''}...`,
-    });
-
-    try {
-      // Compress all images in parallel
-      const compressionResults = await Promise.all(
-        uncompressedImages.map(async (image) => {
-          const compressed = await compressImage(image.originalFile);
-          return {
-            ...compressed,
-            compressed: true
-          };
-        })
-      );
-      
-      // Replace uncompressed images with compressed versions
-      setImages(prevImages => 
-        prevImages.map(image => {
-          // If this image was just compressed, replace it with the compressed version
-          const compressedVersion = compressionResults.find(
-            compImg => compImg.originalFile === image.originalFile && !image.compressed
-          );
-          return compressedVersion || image;
-        })
-      );
-      
-      toast({
-        title: "Compression complete",
-        description: `${uncompressedImages.length} image${uncompressedImages.length !== 1 ? 's were' : ' was'} compressed successfully!`,
-      });
-    } catch (error) {
-      console.error("Error compressing images:", error);
-      toast({
-        title: "Compression error",
-        description: "There was an error compressing one or more images.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsCompressing(false);
     }
   };
 
@@ -318,12 +331,12 @@ export const ImageUploader = () => {
           </Button>
           <Button
             size="sm"
-            onClick={handleCompressImages}
+            onClick={handleCompressAndDownloadImages}
             disabled={isCompressing}
           >
             {isCompressing ? 
               "Compressing..." : 
-              `Compress ${images.filter(img => !img.compressed).length || images.length} Image${images.filter(img => !img.compressed).length !== 1 || images.length !== 1 ? 's' : ''}`
+              `Compress and Download ${images.filter(img => !img.compressed).length || images.length} Image${images.filter(img => !img.compressed).length !== 1 || images.length !== 1 ? 's' : ''}`
             }
           </Button>
         </div>
