@@ -1,5 +1,6 @@
 
-import { ImageUploader } from "../components/ImageUploader";
+import { ImageUploader } from "../components/image-uploader";
+import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   return (
@@ -16,6 +17,8 @@ const Index = () => {
       <p className="text-gray-400 text-xs mt-8 text-center">
         Images are processed in your browser and not uploaded to any server
       </p>
+      
+      <Toaster />
     </div>
   );
 };
