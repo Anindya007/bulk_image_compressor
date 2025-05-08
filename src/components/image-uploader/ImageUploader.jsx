@@ -219,6 +219,7 @@ export const ImageUploader = () => {
         isCompressing={isCompressing}
         onFileSelect={openFileDialog}
         fileInputRef={fileInputRef}
+        handleFileInputChange={handleFileInputChange}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

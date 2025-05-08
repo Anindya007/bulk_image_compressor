@@ -6,6 +6,7 @@ export const DropZone = ({
   isDragging,
   isCompressing,
   onFileSelect,
+  handleFileInputChange,
   fileInputRef,
   onDragEnter,
   onDragOver,
@@ -36,7 +37,7 @@ export const DropZone = ({
         ref={fileInputRef}
         onChange={(e) => {
           if (e.target.files && e.target.files.length > 0) {
-            onFileSelect(e.target.files);
+            handleFileInputChange(e.target.files);
           }
         }}
         multiple
