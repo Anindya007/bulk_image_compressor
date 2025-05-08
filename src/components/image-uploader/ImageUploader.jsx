@@ -57,9 +57,9 @@ export const ImageUploader = () => {
     }
   };
 
-  const handleFileInputChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
+  const handleFileInputChange = (files) => {
+    if (files && files.length > 0) {
+      handleFiles(files);
     }
   };
 

@@ -18,7 +18,7 @@ export const DropZone = ({
     <div
       ref={dropZoneRef}
       className={cn(
-        "relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 ease-in-out",
+        "relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 ease-in-out cursor-pointer",
         isDragging 
           ? "border-primary bg-primary/5" 
           : "border-gray-300 hover:border-primary/50 bg-white",
@@ -29,7 +29,7 @@ export const DropZone = ({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      onClick={onFileSelect}
+      onClick={() => onFileSelect()}
     >
       <input
         type="file"
